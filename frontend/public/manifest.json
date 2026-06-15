@@ -1,0 +1,23 @@
+{
+  "name": "QueueLess",
+  "short_name": "QueueLess",
+  "description": "Eliminate wasted hours in physical queues by digitizing waiting lines for everyday services.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#0F172A",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["productivity", "utilities"]
+}
