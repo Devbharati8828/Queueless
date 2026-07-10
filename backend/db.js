@@ -3,6 +3,7 @@ require('dotenv').config();
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '8828064828',
   database: process.env.DB_NAME || 'queueless',
@@ -11,22 +12,23 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Helper function to create the database if it doesn't exist
+// Helper to run ALTER TABLE safely (ignore if column already exists)
+const safeAlter = async (db, sql) => {
+  try {
+    await db.query(sql);
+  } catch (err) {
+    // 1060 = Duplicate column, 1061 = Duplicate key — safe to ignore
+    if (err.errno !== 1060 && err.errno !== 1061) {
+      console.warn('Migration warning:', err.message);
+    }
+  }
+};
+
 const initDb = async () => {
   try {
-    // Connect without database selected first to create it
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '8828064828',
-    });
-    
-    const dbName = process.env.DB_NAME || 'queueless';
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
-    await connection.end();
-
-    // Now connect to the pool and create tables
     const db = await pool.getConnection();
+
+    // ── Core tables ──────────────────────────────────────────────────────────
 
     await db.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -48,8 +50,25 @@ const initDb = async () => {
         queue_code VARCHAR(20) UNIQUE NOT NULL,
         average_wait_minutes INT DEFAULT 15,
         is_active TINYINT(1) DEFAULT 1,
+        is_paused TINYINT(1) DEFAULT 0,
+        category VARCHAR(50) DEFAULT 'General',
+        max_capacity INT DEFAULT 50,
+        address VARCHAR(255) DEFAULT '',
+        operating_hours VARCHAR(100) DEFAULT '9:00 AM - 5:00 PM',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (provider_id) REFERENCES users(id) ON DELETE SET NULL
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS time_slots (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        queue_id INT NOT NULL,
+        slot_time DATETIME NOT NULL,
+        capacity INT DEFAULT 5,
+        booked INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (queue_id) REFERENCES queues(id) ON DELETE CASCADE
       )
     `);
 
@@ -62,12 +81,44 @@ const initDb = async () => {
         status VARCHAR(20) DEFAULT 'waiting',
         position INT,
         joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        called_at DATETIME NULL,
+        mood_rating TINYINT NULL DEFAULT NULL,
+        scheduled_slot_id INT NULL DEFAULT NULL,
         FOREIGN KEY (queue_id) REFERENCES queues(id) ON DELETE CASCADE,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (scheduled_slot_id) REFERENCES time_slots(id) ON DELETE SET NULL
       )
     `);
 
-    console.log('MySQL Database initialized successfully');
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS service_log (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        queue_id INT,
+        ticket_id INT,
+        duration_seconds INT NOT NULL,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (queue_id) REFERENCES queues(id) ON DELETE CASCADE,
+        FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+      )
+    `);
+
+    // ── Additive migrations (safe — ignore if already exists) ────────────────
+
+    // Feature 5: new queue columns
+    await safeAlter(db, "ALTER TABLE queues ADD COLUMN is_paused TINYINT(1) DEFAULT 0");
+    await safeAlter(db, "ALTER TABLE queues ADD COLUMN category VARCHAR(50) DEFAULT 'General'");
+    await safeAlter(db, "ALTER TABLE queues ADD COLUMN max_capacity INT DEFAULT 50");
+    await safeAlter(db, "ALTER TABLE queues ADD COLUMN address VARCHAR(255) DEFAULT ''");
+    await safeAlter(db, "ALTER TABLE queues ADD COLUMN operating_hours VARCHAR(100) DEFAULT '9:00 AM - 5:00 PM'");
+
+    // Feature 4: mood rating
+    await safeAlter(db, "ALTER TABLE tickets ADD COLUMN mood_rating TINYINT NULL DEFAULT NULL");
+    await safeAlter(db, "ALTER TABLE tickets ADD COLUMN called_at DATETIME NULL");
+
+    // Feature 6: scheduled slot FK
+    await safeAlter(db, "ALTER TABLE tickets ADD COLUMN scheduled_slot_id INT NULL DEFAULT NULL");
+
+    console.log('MySQL Database initialized successfully (Features 4/5/6 migrations applied)');
     db.release();
   } catch (err) {
     console.error('Error initializing MySQL database:', err);

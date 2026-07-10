@@ -18,6 +18,9 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
+// Import controllers for socket actions
+const { cancelHoldTimer } = require('./controllers/queue');
+
 // Socket middleware / connection handler
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
@@ -25,6 +28,16 @@ io.on('connection', (socket) => {
   socket.on('joinQueueRoom', (queueId) => {
     socket.join(`queue_${queueId}`);
     console.log(`Socket ${socket.id} joined room queue_${queueId}`);
+  });
+
+  socket.on('joinUserRoom', (userId) => {
+    socket.join(`user:${userId}`);
+    console.log(`Socket ${socket.id} joined user room user:${userId}`);
+  });
+
+  socket.on('confirm_presence', (ticketId) => {
+    console.log(`Socket ${socket.id} confirmed presence for ticket ${ticketId}`);
+    cancelHoldTimer(ticketId);
   });
 
   socket.on('disconnect', () => {
@@ -41,10 +54,12 @@ app.use((req, res, next) => {
 // Import Routes
 const authRoutes = require('./routes/auth');
 const queueRoutes = require('./routes/queue');
+const ticketRoutes = require('./routes/tickets');
 
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/queue', queueRoutes);
+app.use('/api/tickets', ticketRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

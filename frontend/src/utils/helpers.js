@@ -35,12 +35,18 @@ export function getStatusInfo(status) {
       return { label: 'You\'re Next!', className: 'badge-waiting', color: '#fbbf24' };
     case 'waiting':
       return { label: 'In Queue', className: 'badge-waiting', color: '#fbbf24' };
+    case 'served':
+      return { label: 'Served', className: 'badge-active', color: '#34d399' };
     case 'completed':
       return { label: 'Completed', className: 'badge-active', color: '#34d399' };
     case 'active':
       return { label: 'Active', className: 'badge-active', color: '#34d399' };
     case 'paused':
       return { label: 'Paused', className: 'badge-closed', color: '#fb7185' };
+    case 'expired':
+      return { label: 'Expired', className: 'badge-closed', color: '#fb7185' };
+    case 'cancelled':
+      return { label: 'Cancelled', className: 'badge-closed', color: '#fb7185' };
     default:
       return { label: status, className: 'badge-waiting', color: '#94a3b8' };
   }

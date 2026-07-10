@@ -1,6 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { mockQueues, mockUserTicket, mockProviderQueues, mockStats } from '../data/mockData';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const getToken = () => localStorage.getItem('queueless_token');
+
 const QueueContext = createContext(null);
 
 export function QueueProvider({ children }) {
@@ -68,23 +72,28 @@ export function QueueProvider({ children }) {
     setActiveTicket(null);
   }, []);
 
-  const callNext = useCallback((queueId) => {
-    setProviderQueues(prev => prev.map(q => {
-      if (q.id !== queueId) return q;
-      const updatedCustomers = q.customers.map(c => {
-        if (c.status === 'serving') return { ...c, status: 'completed' };
-        if (c.status === 'next') return { ...c, status: 'serving' };
-        return c;
+  const callNext = useCallback(async (queueId) => {
+    const token = getToken();
+    if (!token) {
+      console.warn('No auth token, cannot call next');
+      return;
+    }
+    try {
+      const response = await fetch(`${API_URL}/api/queue/${queueId}/next`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
-      const nextWaiting = updatedCustomers.find(c => c.status === 'waiting');
-      if (nextWaiting) nextWaiting.status = 'next';
-      return {
-        ...q,
-        currentServing: q.currentServing + 1,
-        totalServed: q.totalServed + 1,
-        customers: updatedCustomers.filter(c => c.status !== 'completed'),
-      };
-    }));
+      if (!response.ok) {
+        const err = await response.json();
+        console.error('callNext failed:', err.message);
+      }
+      // The socket event will handle UI updates
+    } catch (err) {
+      console.error('callNext error:', err);
+    }
   }, []);
 
   const createQueue = useCallback((queueData) => {

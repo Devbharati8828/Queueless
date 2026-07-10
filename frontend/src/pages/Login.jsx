@@ -13,11 +13,15 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) { setError('Please fill in all fields'); return; }
-    login(email, password, role);
-    navigate(role === 'provider' ? '/dashboard' : '/join');
+    try {
+      const loggedInUser = await login(email, password, role);
+      navigate(loggedInUser.role === 'provider' ? '/dashboard' : '/join');
+    } catch (err) {
+      setError(err.message || 'Login failed. Check your credentials.');
+    }
   };
 
   return (

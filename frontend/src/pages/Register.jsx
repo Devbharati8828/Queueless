@@ -14,12 +14,16 @@ export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !email || !password) { setError('Please fill in all fields'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
-    register(name, email, password, role);
-    navigate(role === 'provider' ? '/dashboard' : '/join');
+    try {
+      const registeredUser = await register(name, email, password, role);
+      navigate(registeredUser.role === 'provider' ? '/dashboard' : '/join');
+    } catch (err) {
+      setError(err.message || 'Registration failed. Please try again.');
+    }
   };
 
   return (
