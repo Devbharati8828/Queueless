@@ -1,9 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Zap, QrCode, Clock, Bell, Users, Shield, WifiOff,
   ArrowRight, ChevronRight, Star, Building2, Stethoscope,
-  Landmark, ShoppingBag, Smartphone
+  Landmark, ShoppingBag, Smartphone, Coffee, Check, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,6 +39,14 @@ const categories = [
   { icon: Landmark, label: 'Government', count: '1.8K+' },
   { icon: Building2, label: 'Banks', count: '3.1K+' },
   { icon: ShoppingBag, label: 'Retail', count: '5.2K+' },
+];
+
+const comparisonRows = [
+  { bad: '😤 Stand 2+ hours', good: '😊 Sit anywhere' },
+  { bad: '📋 Paper token', good: '📱 Digital token' },
+  { bad: '❓ No idea wait time', good: '⏱ Live tracking' },
+  { bad: '😰 Miss your turn', good: '🔔 Get notified' },
+  { bad: '📍 Must stay in line', good: '🚶 Walk freely' },
 ];
 
 export default function Landing() {
@@ -89,73 +98,70 @@ export default function Landing() {
               </motion.div>
             </div>
 
-            {/* Hero Visual Card */}
-            <motion.div initial={{ opacity: 0, scale: 0.9, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.8 }} className="relative hidden lg:block">
-              <div className="glass rounded-3xl p-8 glow-blue">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <p className="text-muted-foreground text-sm font-medium">Your Position</p>
-                    <p className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-cyan-500 mt-1">04</p>
+            {/* Hero Visual Card - Before & After Comparison */}
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.8 }} className="relative hidden lg:block w-full max-w-md mx-auto">
+              <div className="glass rounded-3xl overflow-hidden border border-dark-700/50 bg-background/60 backdrop-blur-md shadow-2xl relative group">
+                
+                {/* Background Glows */}
+                <div className="absolute top-0 left-0 w-1/2 h-full bg-rose-500/5 blur-3xl group-hover:bg-rose-500/10 transition-colors duration-500" />
+                <div className="absolute top-0 right-0 w-1/2 h-full bg-cyan-500/10 blur-3xl group-hover:bg-cyan-500/20 transition-colors duration-500" />
+
+                {/* Header */}
+                <div className="flex text-center border-b border-dark-700/50 relative z-10">
+                  <div className="w-1/2 py-4 px-2 text-rose-400/80 font-bold text-[13px] tracking-wider">
+                    ❌ Without QueueLess
                   </div>
-                  <div className="text-right">
-                    <Badge variant="default" className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 shadow-none border-0">Active</Badge>
-                    <p className="text-muted-foreground text-sm mt-2 font-medium">Token #127</p>
-                  </div>
-                </div>
-                <div className="mb-6">
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-dark-400">Queue Progress</span>
-                    <span className="text-primary-400 font-semibold">75%</span>
-                  </div>
-                  <div className="h-2.5 bg-dark-800 rounded-full overflow-hidden">
-                    <motion.div initial={{ width: 0 }} animate={{ width: '75%' }} transition={{ delay: 1, duration: 1.5 }} className="h-full rounded-full gradient-primary progress-glow" />
+                  <div className="w-1/2 py-4 px-2 text-cyan-400 font-bold text-[13px] tracking-wider group-hover:text-cyan-300 transition-colors duration-500 border-l border-dark-700/50">
+                    ✅ With QueueLess
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
-                  {[{ label: 'Wait Time', value: '~12 min', icon: Clock }, { label: 'Ahead', value: '3 people', icon: Users }, { label: 'Serving', value: '#124', icon: Zap }].map(item => {
-                    const Icon = item.icon;
-                    return (
-                      <div key={item.label} className="glass-light rounded-xl p-3 text-center">
-                        <Icon className="w-4 h-4 text-primary-400 mx-auto mb-1.5" />
-                        <p className="text-xs text-dark-400">{item.label}</p>
-                        <p className="text-sm font-semibold text-dark-100 mt-0.5">{item.value}</p>
+
+                {/* Center Divider for Rows */}
+                <div className="absolute top-14 bottom-0 left-1/2 w-px bg-dark-700/50 -translate-x-1/2 z-0" />
+
+                {/* Rows */}
+                <div className="p-5 space-y-5 relative z-10">
+                  {comparisonRows.map((row, i) => (
+                    <motion.div 
+                      key={i}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.8 + i * 0.2, duration: 0.5 }}
+                      className="flex items-center text-[14px] relative"
+                    >
+                      {/* Left Side */}
+                      <div className="w-1/2 text-rose-200/60 text-left pr-5 font-medium">
+                        {row.bad}
                       </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-6 flex items-center gap-3 glass-light rounded-xl p-3">
-                  <span className="text-2xl">🏥</span>
-                  <div>
-                    <p className="text-sm font-semibold text-dark-100">City General Hospital</p>
-                    <p className="text-xs text-dark-400">OPD - General Consultation</p>
-                  </div>
+                      
+                      {/* Arrow Overlap */}
+                      <div className="absolute left-1/2 -translate-x-1/2 text-dark-500 bg-[#070b14] px-2 text-xs rounded-full">
+                        →
+                      </div>
+                      
+                      {/* Right Side */}
+                      <motion.div 
+                        initial={{ color: '#fff', textShadow: '0 0 8px #10b981', backgroundColor: 'rgba(16, 185, 129, 0.4)' }}
+                        animate={{ color: '#34d399', textShadow: '0 0 0px #10b981', backgroundColor: 'rgba(16, 185, 129, 0)' }}
+                        transition={{ delay: 0.8 + i * 0.2 + 0.1, duration: 0.8 }}
+                        className="w-1/2 font-bold text-left pl-5 group-hover:text-cyan-300 group-hover:brightness-125 transition-all duration-300 rounded"
+                      >
+                        {row.good}
+                      </motion.div>
+                    </motion.div>
+                  ))}
                 </div>
               </div>
-              <motion.div
-                initial={{ opacity: 0, x: 40 }}
-                animate={{
-                  opacity: 1,
-                  x: 0,
-                  y: [0, -15, 0]
-                }}
-                transition={{
-                  x: { delay: 1.2, duration: 0.6 },
-                  opacity: { delay: 1.2, duration: 0.6 },
-                  y: {
-                    delay: 1.8,
-                    duration: 6,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }
-                }}
-                className="absolute lg:-right-4 xl:-right-6 -top-12 glass rounded-2xl p-4 w-56 glow-emerald"
+
+              {/* Text below card */}
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 2.2, duration: 0.8 }}
+                className="text-center text-dark-400 text-xs font-medium mt-4"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <Bell className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-semibold text-emerald-400">NOTIFICATION</span>
-                </div>
-                <p className="text-sm text-dark-200">Your turn is approaching! Only 3 people ahead.</p>
-              </motion.div>
+                Join 500K+ users across India who stopped standing in line
+              </motion.p>
             </motion.div>
           </div>
         </div>
